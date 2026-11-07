@@ -1,0 +1,38 @@
+[workspace]
+resolver = "2"
+members = [
+    "hub",
+    "collector",
+    "sentinel",
+    "ipc",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/LMA1980/mu-observable"
+authors = ["LMA1980"]
+
+[workspace.dependencies]
+mu-observable-hub = { path = "hub", version = "0.1.0" }
+mu-observable-collector = { path = "collector", version = "0.1.0" }
+mu-observable-sentinel = { path = "sentinel", version = "0.1.0" }
+mu-observable-ipc = { path = "ipc", version = "0.1.0" }
+
+[patch."https://github.com/LMA1980/mu-observable-hub.git"]
+mu-observable-hub = { path = "hub" }
+
+[patch."https://github.com/LMA1980/mu-observable-collector.git"]
+mu-observable-collector = { path = "collector" }
+
+[patch."https://github.com/LMA1980/mu-observable-sentinel.git"]
+mu-observable-sentinel = { path = "sentinel" }
+
+[patch."https://github.com/LMA1980/mu-observable-ipc.git"]
+mu-observable-ipc = { path = "ipc" }
+
+[patch.crates-io]
+mu-observable-hub = { path = "hub" }
+mu-observable-collector = { path = "collector" }
+mu-observable-sentinel = { path = "sentinel" }
+mu-observable-ipc = { path = "ipc" }

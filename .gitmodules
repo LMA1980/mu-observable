@@ -1,0 +1,16 @@
+[submodule "code/hub"]
+	path = code/hub
+	url = https://github.com/LMA1980/mu-observable-hub.git
+	branch = feat/m8-naming-alignment
+[submodule "code/collector"]
+	path = code/collector
+	url = https://github.com/LMA1980/mu-observable-collector.git
+	branch = feat/m8-naming-alignment
+[submodule "code/sentinel"]
+	path = code/sentinel
+	url = https://github.com/LMA1980/mu-observable-sentinel.git
+	branch = feat/m8-naming-alignment
+[submodule "code/ipc"]
+	path = code/ipc
+	url = https://github.com/LMA1980/mu-observable-ipc.git
+	branch = feat/m8-naming-alignment
