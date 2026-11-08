@@ -1,0 +1,43 @@
+name = "mu-observable"
+# Workspace Symposium manifest for mu-observable.
+
+[[plugins]]
+depends-on = ["mu-observable-hub"]
+source.cargo = "mu-observable-hub"
+
+[[plugins]]
+depends-on = ["mu-observable-collector"]
+source.cargo = "mu-observable-collector"
+
+[[plugins]]
+depends-on = ["mu-observable-sentinel"]
+source.cargo = "mu-observable-sentinel"
+
+[[plugins]]
+depends-on = ["mu-observable-ipc"]
+source.cargo = "mu-observable-ipc"
+
+[[installations]]
+name = "mu-observable-cli"
+executable = "mu-observable-cli"
+
+[subcommand.mu-observable]
+description = "Query mu-observable benchmark regressions, canary SLOs, W3C traces, and guarded DuckDB analytics"
+audience = "agents"
+command = "mu-observable-cli"
+predicates = ["path_exists(mu-observable-cli)"]
+
+[[mcp_servers]]
+name = "mu-observable-mcp"
+command = "/usr/local/bin/mu-observable-mcp"
+args = [
+    "--db",
+    "/var/lib/muobserve/db/muobserve.duckdb",
+    "--parquet-root",
+    "/var/lib/muobserve/parquet",
+]
+env = [
+    { name = "MUOBSERVE_DB_PATH", value = "/var/lib/muobserve/db/muobserve.duckdb" },
+    { name = "MUOBSERVE_PARQUET_ROOT", value = "/var/lib/muobserve/parquet" },
+]
+predicates = ["path_exists(/usr/local/bin/mu-observable-mcp)"]
