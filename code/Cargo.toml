@@ -15,8 +15,8 @@ authors = ["LMA1980"]
 license = "AGPL-3.0-only"
 
 [workspace.dependencies]
-mu-observable-hub = { path = "hub", version = "0.1.0" }
-mu-observable-collector = { path = "collector", version = "0.1.0" }
+mu-observable-hub = { path = "hub", version = "0.1.1" }
+mu-observable-collector = { path = "collector", version = "0.1.1" }
 mu-observable-sentinel = { path = "sentinel", version = "0.1.0" }
 mu-observable-ipc = { path = "ipc", version = "0.1.0" }
 
