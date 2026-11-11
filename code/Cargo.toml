@@ -8,7 +8,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 repository = "https://github.com/LMA1980/mu-observable"
 authors = ["LMA1980"]
@@ -17,8 +17,8 @@ license = "AGPL-3.0-only"
 [workspace.dependencies]
 mu-observable-hub = { path = "hub", version = "0.1.1" }
 mu-observable-collector = { path = "collector", version = "0.1.1" }
-mu-observable-sentinel = { path = "sentinel", version = "0.1.0" }
-mu-observable-ipc = { path = "ipc", version = "0.1.0" }
+mu-observable-sentinel = { path = "sentinel", version = "0.1.1" }
+mu-observable-ipc = { path = "ipc", version = "0.1.1" }
 
 [patch."https://github.com/LMA1980/mu-observable-hub.git"]
 mu-observable-hub = { path = "hub" }
