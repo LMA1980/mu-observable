@@ -23,20 +23,20 @@ ______________________________________________________________________
 
 `mu-observable` is organized into four modular crates located under `code/`:
 
-| Submodule                                   | Target                 | License                                         | Responsibility                                                                                                                                                         |
-| :------------------------------------------ | :--------------------- | :---------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`mu-observable-hub`](code/hub)             | native daemon / server | `AGPL-3.0-only`                                 | Central telemetry aggregator, hybrid DuckDB (7-day hot) + Hive-partitioned Parquet (cold) analytics engine, mTLS ingestion receiver, and state store                   |
-| [`mu-observable-collector`](code/collector) | native daemon          | `AGPL-3.0-only`                                 | Edge agent ingesting local OTLP/HTTP JSON (`127.0.0.1:4318`) and Arrow streams, secret scrubbing via `EdgeSecretScrubber`, bounded ring-buffer WAL, and mTLS forwarder |
-| [`mu-observable-sentinel`](code/sentinel)   | native daemon          | `AGPL-3.0-only`                                 | Edge host watchdog monitoring `/dev/kmsg`, PSI, block I/O latency, Btrfs errors, and socket pressure under `MuIsolation` confinement                                   |
-| [`mu-observable-ipc`](code/ipc)             | native library         | `LGPL-3.0-only WITH LGPL-3.0-linking-exception` | Shared zero-copy serialization, Apache Fory schemas, and Apache Arrow wire framing (`MUOB` magic protocol)                                                             |
+| Submodule                                   | Target                 | License                                         | Responsibility                                                                                                                                                                                                              |
+| :------------------------------------------ | :--------------------- | :---------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`mu-observable-hub`](code/hub)             | native daemon / server | `AGPL-3.0-only`                                 | Central telemetry aggregator, hybrid DuckDB (7-day hot) + Hive-partitioned Parquet (cold) analytics engine, mTLS ingestion receiver, [`mu-auth`](https://github.com/LMA1980/mu-auth) RBAC, `IngressEngine`, and state store |
+| [`mu-observable-collector`](code/collector) | native daemon          | `AGPL-3.0-only`                                 | Edge agent ingesting local OTLP/HTTP JSON & Arrow (`127.0.0.1:4318`) and native `MUOB` Arrow streams (`127.0.0.1:4319`), secret scrubbing via `EdgeSecretScrubber`, bounded ring-buffer WAL, and mTLS forwarder             |
+| [`mu-observable-sentinel`](code/sentinel)   | native daemon          | `AGPL-3.0-only`                                 | Edge host watchdog monitoring `/dev/kmsg`, PSI, block I/O latency, Btrfs errors, and socket pressure under [`mu-ci-isolation`](https://github.com/LMA1980/mu-ci-isolation) confinement                                      |
+| [`mu-observable-ipc`](code/ipc)             | native library         | `LGPL-3.0-only WITH LGPL-3.0-linking-exception` | Shared zero-copy serialization, Apache Fory schemas, and Apache Arrow wire framing (`MUOB` magic protocol)                                                                                                                  |
 
 ______________________________________________________________________
 
 ## Tooling & Interfaces
 
-### 1. Model Context Protocol (MCP) Server: `mu-observable-mcp`
+### 1. Model Context Protocol (MCP) Server: `mu-observable-mcp` & `mu-observable-hub`
 
-The workspace builds `mu-observable-mcp`, an Antigravity-native MCP server providing 10 structured tools over `stdio` or HTTP (`POST http://127.0.0.1:9480/mcp`):
+The workspace provides **12 structured MCP tools**: `mu-observable-mcp` serves MCP over `stdio`, while `mu-observable-hub --serve` serves HTTP MCP (`POST http://127.0.0.1:9480/mcp` and `GET /mcp/sse`) alongside the `/api/obs/v1/*` console API:
 
 - **`check_benchmark_regressions`**: Evaluates candidate runs against rolling `main` baselines stratified by `(arch, cpu_cluster, vlen_bits)`.
 - **`get_test_flakiness`**: Computes rolling 30-day pass/fail flip-flop flakiness indices per test case.
@@ -48,19 +48,30 @@ The workspace builds `mu-observable-mcp`, an Antigravity-native MCP server provi
 - **`inspect_node_utilization`**: Inspects hardware telemetry, memlock ceilings, and CPU cluster utilization.
 - **`compare_cluster_efficiency`**: Analyzes SpacemiT K3 Cluster 0 (`X100`, `VLEN=256`) vs Cluster 1 (`A100`, `VLEN=1024`) vs `x86_64` efficiency.
 - **`execute_analytics_sql`**: Runs guarded read-only DuckDB SQL queries over unified hot and cold partitions.
+- **`analyze_causal_root_cause`**: Analyzes causal root cause of latency and error anomalies across distributed traces and logs.
+- **`diagnose_anomaly_ai`**: Generates AI-assisted root-cause diagnosis for an anomaly trace using statistical inference or SLM synthesis.
 
-### 2. Command-Line Interface: `mu-observable-cli`
+### 2. Console API, RBAC & Ingress Integration
+
+[`mu-observable-hub`](code/hub) exposes `/api/obs/v1/*` HTTP/SSE endpoints consumed by [`mu-console`](https://github.com/LMA1980/mu-console) and protected by [`mu-auth`](https://github.com/LMA1980/mu-auth) policy folios (`MuAuthFolioVerifier`, including `super-operator` elevation):
+
+- **Telemetry & Causal Feeds**: `/api/obs/v1/smartscape`, `/api/obs/v1/problems`, `/api/obs/v1/traces*`, `/api/obs/v1/logs*`, `/api/obs/v1/metrics/timeseries`, `/api/obs/v1/store/status`, and `/api/obs/v1/events` (SSE).
+- **7-Subsystem Operational Status & Maintenance Overrides**: `/api/obs/v1/status/subsystems` and `/api/obs/v1/status/subsystems/{id}/maintenance` tracking platform health across CI, CD, A|B Deploy, Registry, Observability, Model Runner, and Platform.
+- **Non-Destructive Monitoring Exclusions**: `/api/obs/v1/status/exclusions` allowing operators to suppress noisy checks without altering underlying telemetry ingestion.
+- **Dynamic Edge Ingress (`IngressEngine`)**: `/api/obs/v1/ingress/{overview,routes,upstreams,tls}` coordinating reverse-proxy routing and upstream health checks across [`mu-ci-controller`](https://github.com/LMA1980/mu-ci-controller), [`mu-cd-controller`](https://github.com/LMA1980/mu-cd-controller), [`mu-registry`](https://github.com/LMA1980/mu-registry), and [`jero-manager`](https://github.com/LMA1980/jero-manager).
+
+### 3. Command-Line Interface: `mu-observable-cli`
 
 Unified diagnostic CLI for local administration, regression evaluations, canary assertions, and Symposium agent integration (`cargo agents mu-observable`):
 
 ```bash
 # Evaluate benchmark regressions against rolling main baselines
 mu-observable-cli --db /var/lib/muobserve/db/muobserve.duckdb \
-  regressions --repo lma1980/k3-core --commit HEAD --baseline main
+  regressions --repo LMA1980/jero-core --commit HEAD --baseline main
 
 # Assert canary deployment SLO over a 300s window
 mu-observable-cli --db /var/lib/muobserve/db/muobserve.duckdb \
-  slo --service action-runner-controller --digest HEAD --window-secs 300 --max-errors 0 --max-p99-ms 250.0
+  slo --service mu-ci-controller --digest HEAD --window-secs 300 --max-errors 0 --max-p99-ms 250.0
 
 # Inspect trace waterfalls
 mu-observable-cli --db /var/lib/muobserve/db/muobserve.duckdb \
